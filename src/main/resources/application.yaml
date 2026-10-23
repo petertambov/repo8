@@ -1,0 +1,22 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5433/limits_db?currentSchema=limits_schema
+    username: postgres
+    password: pg_test
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+  liquibase:
+    default-schema: limits_schema
+    change-log: classpath:db/changelog/db.changelog-master.xml
+    parameters:
+      default-limit: ${app.default-limit}
+
+server:
+  port: 8080
+
+app:
+  default-limit: 100000.00
+
