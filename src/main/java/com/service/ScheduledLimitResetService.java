@@ -1,5 +1,6 @@
 package com.service;
 
+import com.entity.Reservations;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -8,7 +9,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.List;
 
-import com.entity.Reservation;
 import com.entity.ReservationStatus;
 import com.repository.ReservationRepository;
 import com.repository.UserLimitRepository;
@@ -20,13 +20,13 @@ public class ScheduledLimitResetService {
 
     private final UserLimitRepository userLimitRepository;
     private final ReservationRepository reservationRepository;
-    private final SettingService settingService;
+    private final SettingsService settingService;
 
     @Scheduled(cron = "0 0 0 * * *")
     @Transactional
     public void resetLimits() {
 
-        List<Reservation> activeReservations = reservationRepository.findByStatus(ReservationStatus.RESERVED);
+        List<Reservations> activeReservations = reservationRepository.findByStatus(ReservationStatus.RESERVED);
         log.info("Найдено активных резерваций перед сбросом: {}", activeReservations.size());
 
         BigDecimal defaultLimit = settingService.getDefaultLimit();

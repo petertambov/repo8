@@ -1,37 +1,37 @@
 package com.controller;
 
-import jakarta.validation.constraints.Positive;
+import com.config.LimitProperties;
+import com.service.ReservationsService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.util.List;
 
-import com.entity.Reservation;
 import com.entity.ReservationStatus;
-import com.repository.ReservationRepository;
-import com.service.SettingService;
+import com.dto.ReservationsDTO;
 
 @RestController
 @RequestMapping("/admin")
 @Validated
 public class AdminController {
 
-    private final SettingService settingService;
-    private final ReservationRepository reservationRepository;
+    private final ReservationsService reservationsService;
+    private final LimitProperties limitProperties;
 
-    public AdminController(SettingService settingService, ReservationRepository reservationRepository) {
-        this.settingService = settingService;
-        this.reservationRepository = reservationRepository;
+    public AdminController(ReservationsService reservationsService,
+                           LimitProperties limitProperties) {
+        this.reservationsService = reservationsService;
+        this.limitProperties = limitProperties;
     }
 
-    @PutMapping("/settings/default-limit")
-    public void setDefaultLimit(@RequestParam @Positive(message = "Лимит должен быть положительным") BigDecimal limit) {
-        settingService.setDefaultLimit(limit);
+    @GetMapping("/settings/default-limit")
+    public BigDecimal getDefaultLimit() {
+         return limitProperties.getDefaultValue();
     }
 
     @GetMapping("/reservations/status/{status}")
-    public List<Reservation> getReservationsByStatus(@PathVariable ReservationStatus status) {
-        return reservationRepository.findByStatus(status);
+    public List<ReservationsDTO> getReservationsDTOByStatus(@PathVariable ReservationStatus status) {
+        return reservationsService.findByStatus(status);
     }
 }

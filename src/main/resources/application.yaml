@@ -18,5 +18,5 @@ server:
   port: 8080
 
 app:
-  default-limit: 100000.00
-
+  limits:
+    default-value: 100000.00

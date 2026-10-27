@@ -10,15 +10,15 @@ import org.springframework.data.repository.query.Param;
 import java.math.BigDecimal;
 import java.util.Optional;
 
-import com.entity.UserLimit;
+import com.entity.UserLimits;
 
-public interface UserLimitRepository extends JpaRepository<UserLimit, Long> {
+public interface UserLimitRepository extends JpaRepository<UserLimits, Long> {
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT ul FROM UserLimit ul WHERE ul.userId = :userId")
-    Optional<UserLimit> findByIdWithLock(@Param("userId") Long userId);
+    @Query("SELECT ul FROM UserLimits ul WHERE ul.userId = :userId")
+    Optional<UserLimits> findByIdWithLock(@Param("userId") Long userId);
 
     @Modifying
-    @Query("UPDATE UserLimit ul SET ul.limitAmount = :limit")
+    @Query("UPDATE UserLimits ul SET ul.limitAmount = :limit")
     int updateAllLimits(@Param("limit") BigDecimal limit);
 }

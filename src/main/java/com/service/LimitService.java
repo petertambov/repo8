@@ -1,5 +1,7 @@
 package com.service;
 
+import com.entity.Reservations;
+import com.entity.UserLimits;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -13,9 +15,9 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 import com.dto.ReserveRequest;
-import com.entity.Reservation;
+import com.entity.Reservations;
 import com.entity.ReservationStatus;
-import com.entity.UserLimit;
+import com.entity.UserLimits;
 import com.exception.MyException;
 import com.repository.ReservationRepository;
 import com.repository.UserLimitRepository;
@@ -27,7 +29,7 @@ public class LimitService {
 
     private final UserLimitRepository userLimitRepository;
     private final ReservationRepository reservationRepository;
-    private final SettingService settingService;
+    private final SettingsService settingService;
 
     @Transactional
     public BigDecimal getLimit(Long userId) {
@@ -35,14 +37,14 @@ public class LimitService {
     }
 
     @Transactional
-    public UserLimit createUserLimit(Long userId) {
+    public UserLimits createUserLimit(Long userId) {
         BigDecimal defaultLimit = settingService.getDefaultLimit();
-        UserLimit userLimit = new UserLimit(userId, defaultLimit);
-        return userLimitRepository.save(userLimit);
+        UserLimits userLimits = new UserLimits(userId, defaultLimit);
+        return userLimitRepository.save(userLimits);
     }
 
     @Transactional(isolation = Isolation.REPEATABLE_READ)
-    public UserLimit getOrCreateUserLimit(Long userId) {
+    public UserLimits getOrCreateUserLimit(Long userId) {
         return userLimitRepository.findByIdWithLock(userId)
                 .orElseGet(() -> {
                     try {
@@ -58,76 +60,73 @@ public class LimitService {
     }
 
     @Transactional(isolation = Isolation.REPEATABLE_READ)
-    public Reservation reserve(ReserveRequest request) {
+    public Reservations reserve(ReserveRequest request) {
         Long userId = request.userId();
         BigDecimal amount = request.amount();
 
-        UserLimit userLimit = getOrCreateUserLimit(userId);
+        UserLimits userLimits = getOrCreateUserLimit(userId);
 
-        if (userLimit.getLimitAmount().compareTo(amount) < 0) {
+        if (userLimits.getLimitAmount().compareTo(amount) < 0) {
             throw new MyException(HttpStatus.BAD_REQUEST, "Недостаточный лимит для пользователя: " + userId);
         }
 
-        userLimit.setLimitAmount(userLimit.getLimitAmount().subtract(amount));
-        userLimitRepository.save(userLimit);
+        userLimits.setLimitAmount(userLimits.getLimitAmount().subtract(amount));
+        userLimitRepository.save(userLimits);
 
-        Reservation reservation = Reservation.builder()
-                .userId(userId)
-                .amount(amount)
-                .operationId(request.operationId())
-                .status(ReservationStatus.RESERVED)
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
-                .build();
+        Reservations reservation = new Reservations(
+                userId,
+                amount,
+                ReservationStatus.RESERVED
+        );
         return reservationRepository.save(reservation);
     }
 
     @Transactional
     public void confirm(UUID reservationId) {
-        Reservation reservation = findReservation(reservationId);
-        if (reservation.getStatus() != ReservationStatus.RESERVED) {
+        Reservations reservations = findReservation(reservationId);
+        if (reservations.getStatus() != ReservationStatus.RESERVED) {
             throw new MyException(HttpStatus.BAD_REQUEST,
                     "Бронирование " + reservationId + " не ЗАРЕЗЕРВИРОВАНО");
         }
-        reservation.setStatus(ReservationStatus.CONFIRMED);
-        reservationRepository.save(reservation);
+        reservations.setStatus(ReservationStatus.CONFIRMED);
+        reservationRepository.save(reservations);
     }
 
     @Transactional(isolation = Isolation.REPEATABLE_READ)
     public void cancel(UUID reservationId) {
-        Reservation reservation = findReservation(reservationId);
-        if (reservation.getStatus() != ReservationStatus.RESERVED) {
+        Reservations reservations = findReservation(reservationId);
+        if (reservations.getStatus() != ReservationStatus.RESERVED) {
             throw new MyException(HttpStatus.BAD_REQUEST,
                     "Бронирование " + reservationId + " не ЗАРЕЗЕРВИРОВАНО");
         }
 
-        UserLimit userLimit = userLimitRepository.findByIdWithLock(reservation.getUserId())
+        UserLimits userLimits = userLimitRepository.findByIdWithLock(reservations.getUserId())
                 .orElseThrow(() -> new MyException(HttpStatus.NOT_FOUND, "Пользовательский лимит не найден"));
-        userLimit.setLimitAmount(userLimit.getLimitAmount().add(reservation.getAmount()));
-        userLimitRepository.save(userLimit);
+        userLimits.setLimitAmount(userLimits.getLimitAmount().add(reservations.getAmount()));
+        userLimitRepository.save(userLimits);
 
-        reservation.setStatus(ReservationStatus.CANCELLED);
-        reservationRepository.save(reservation);
+        reservations.setStatus(ReservationStatus.CANCELLED);
+        reservationRepository.save(reservations);
     }
 
     @Transactional(isolation = Isolation.REPEATABLE_READ)
     public void rollback(UUID reservationId) {
-        Reservation reservation = findReservation(reservationId);
-        if (reservation.getStatus() != ReservationStatus.CONFIRMED) {
+        Reservations reservations = findReservation(reservationId);
+        if (reservations.getStatus() != ReservationStatus.CONFIRMED) {
             throw new MyException(HttpStatus.BAD_REQUEST,
                     "Бронирование " + reservationId + " не ПОДТВЕРЖДЕНО");
         }
 
-        UserLimit userLimit = userLimitRepository.findByIdWithLock(reservation.getUserId())
+        UserLimits userLimits = userLimitRepository.findByIdWithLock(reservations.getUserId())
                 .orElseThrow(() -> new MyException(HttpStatus.NOT_FOUND, "Пользовательский лимит не найден"));
-        userLimit.setLimitAmount(userLimit.getLimitAmount().add(reservation.getAmount()));
-        userLimitRepository.save(userLimit);
+        userLimits.setLimitAmount(userLimits.getLimitAmount().add(reservations.getAmount()));
+        userLimitRepository.save(userLimits);
 
-        reservation.setStatus(ReservationStatus.ROLLED_BACK);
-        reservationRepository.save(reservation);
+        reservations.setStatus(ReservationStatus.ROLLED_BACK);
+        reservationRepository.save(reservations);
     }
 
-    private Reservation findReservation(UUID id) {
+    private Reservations findReservation(UUID id) {
         return reservationRepository.findById(id)
                 .orElseThrow(() -> new MyException(HttpStatus.NOT_FOUND, "Бронирование не найдено: " + id));
     }
