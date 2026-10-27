@@ -2,6 +2,7 @@ package com.controller;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -14,13 +15,10 @@ import com.service.LimitService;
 @RestController
 @RequestMapping("/api/v1/limits")
 @Validated
+@RequiredArgsConstructor
 public class LimitController {
 
     private final LimitService limitService;
-
-    public LimitController(LimitService limitService) {
-        this.limitService = limitService;
-    }
 
     @GetMapping("/{userId}")
     public LimitResponse getLimit(@PathVariable @Positive Long userId) {

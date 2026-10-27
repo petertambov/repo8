@@ -1,5 +1,6 @@
 package com.service;
 
+import com.config.LimitProperties;
 import com.entity.Reservations;
 import com.entity.UserLimits;
 import lombok.RequiredArgsConstructor;
@@ -11,13 +12,10 @@ import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 import com.dto.ReserveRequest;
-import com.entity.Reservations;
 import com.entity.ReservationStatus;
-import com.entity.UserLimits;
 import com.exception.MyException;
 import com.repository.ReservationRepository;
 import com.repository.UserLimitRepository;
@@ -29,7 +27,7 @@ public class LimitService {
 
     private final UserLimitRepository userLimitRepository;
     private final ReservationRepository reservationRepository;
-    private final SettingsService settingService;
+    private final LimitProperties limitProperties;
 
     @Transactional
     public BigDecimal getLimit(Long userId) {
@@ -38,7 +36,7 @@ public class LimitService {
 
     @Transactional
     public UserLimits createUserLimit(Long userId) {
-        BigDecimal defaultLimit = settingService.getDefaultLimit();
+        BigDecimal defaultLimit = limitProperties.getDefaultValue();
         UserLimits userLimits = new UserLimits(userId, defaultLimit);
         return userLimitRepository.save(userLimits);
     }

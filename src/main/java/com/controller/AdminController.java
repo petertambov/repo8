@@ -2,6 +2,7 @@ package com.controller;
 
 import com.config.LimitProperties;
 import com.service.ReservationsService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,16 +15,11 @@ import com.dto.ReservationsDTO;
 @RestController
 @RequestMapping("/admin")
 @Validated
+@RequiredArgsConstructor
 public class AdminController {
 
     private final ReservationsService reservationsService;
     private final LimitProperties limitProperties;
-
-    public AdminController(ReservationsService reservationsService,
-                           LimitProperties limitProperties) {
-        this.reservationsService = reservationsService;
-        this.limitProperties = limitProperties;
-    }
 
     @GetMapping("/settings/default-limit")
     public BigDecimal getDefaultLimit() {

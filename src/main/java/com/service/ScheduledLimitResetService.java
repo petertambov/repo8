@@ -1,5 +1,6 @@
 package com.service;
 
+import com.config.LimitProperties;
 import com.entity.Reservations;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +21,7 @@ public class ScheduledLimitResetService {
 
     private final UserLimitRepository userLimitRepository;
     private final ReservationRepository reservationRepository;
-    private final SettingsService settingService;
+    private final LimitProperties limitProperties;
 
     @Scheduled(cron = "0 0 0 * * *")
     @Transactional
@@ -29,7 +30,7 @@ public class ScheduledLimitResetService {
         List<Reservations> activeReservations = reservationRepository.findByStatus(ReservationStatus.RESERVED);
         log.info("Найдено активных резерваций перед сбросом: {}", activeReservations.size());
 
-        BigDecimal defaultLimit = settingService.getDefaultLimit();
+        BigDecimal defaultLimit = limitProperties.getDefaultValue();
         log.info("Сброс всех лимитов по умолчанию: {}", defaultLimit);
 
         int updatedRows = userLimitRepository.updateAllLimits(defaultLimit);
